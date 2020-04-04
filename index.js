@@ -1,3 +1,7 @@
+// patch for browserify
+const util = require('util')
+util.promisify = util.promisify || require('util-promisify')
+
 const Board = require('@sabaki/go-board')
 const chalk = require('chalk')
 // const leelaBig = require('./ais/leelazero-40x256')
@@ -80,12 +84,12 @@ function takeTurn (ai) {
   // update current player to next
   currentPlayer = currentPlayer === 1 ? -1 : 1
   // draw board
-  drawBoard(board)
+  renderBoard(board)
   // indicate game state
   return gameActive
 }
 
-function drawBoard (board) {
+function renderBoard (board) {
   let output = ''
   // build liberties
   const libertyBoard = Array(board.height).fill().map(() => Array(board.width).fill())

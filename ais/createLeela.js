@@ -1,5 +1,5 @@
-const tf = require('@tensorflow/tfjs-node-gpu')
-// const tf = require('@tensorflow/tfjs-node')
+const { tf, loadModel } = require('./tf')
+
 const BLACK = 1
 const WHITE = -1
 
@@ -25,8 +25,8 @@ function createLeela ({ modelPath }) {
     boardHistory[WHITE] = Array(8).fill().map(() => get_empty_board(width, height))
     // awaken the ai
     console.log('Loading Model...')
-    const model_url = `file://${modelPath}/model.json`
-    model = await tf.loadLayersModel(model_url)
+    // const model_url = `file://${modelPath}/model.json`
+    model = await loadModel(modelPath)
   }
 
   function calculateNextMove (board, player) {
