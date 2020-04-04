@@ -1,6 +1,7 @@
 const Board = require('@sabaki/go-board')
 const chalk = require('chalk')
-const ai = require('./ai')
+// const ai = require('./ais/leelazero-40x256')
+const ai = require('./ais/leelazero-10x128')
 
 let board = Board.fromDimensions(19)
 let currentPlayer = 1
@@ -10,13 +11,6 @@ const colors = {
   '1': 'red',
   '-1': 'blue',
 }
-
-// ;(async function () {
-//   while (board.isValid()) {
-//     takeTurn()
-//     await timeout(1000)
-//   }
-// })()
 
 async function start() {
   await ai.init(board)
@@ -78,58 +72,6 @@ function takeTurn (ai) {
   return gameActive
 }
 
-function calculateNextMove (board, player) {
-  const xOrdering = randomOrdering(board.width)
-  const yOrdering = randomOrdering(board.height)
-  for (const x of xOrdering) {
-    for (const y of yOrdering) {
-      const vertex = [x, y]
-      // exit early if not free
-      if (board.get(vertex) !== 0) continue
-      const analysis = board.analyzeMove(player, vertex)
-      // console.log(`move analyis ${player} ${vertex}, ${JSON.stringify(analysis, null, 2)}`)
-      const {
-        pass,
-        overwrite,
-        capturing,
-        suicide,
-        ko,
-      } = analysis
-      // try again if invalid
-      if (pass || overwrite || suicide || ko) {
-        continue
-      }
-      if (capturing) {
-        console.log(`capture @ ${vertex} by ${player}`)
-      }
-      return { move: vertex }
-    }
-  }
-  return { pass: true }
-}
-
-function randomOrdering (length) {
-  return shuffleArray(
-    Array(length)
-    .fill()
-    .map((_,index)=>index)
-  )
-}
-
-function shuffleArray (array) {
-  for (var i = array.length - 1; i > 0; i--) {
-      var j = randomInt(i + 1)
-      var temp = array[i]
-      array[i] = array[j]
-      array[j] = temp
-  }
-  return array
-}
-
-function randomInt (max) {
-  return Math.floor(Math.random() * max)
-}
-
 function drawBoard (board) {
   let output = ''
   // build liberties
@@ -151,28 +93,15 @@ function drawBoard (board) {
         : hasPos ? 1
         : -1
       libertyBoard[y][x] = value
-
-      // for (const [libX, libY] of freeNeighbors) {
-      //   let value = libertyBoard[libX][libY]
-      //   if (value === undefined) {
-      //     // uncalimed, set to self
-      //     value = owner
-      //   } else if (value === -owner) {
-      //     // uncalimed, set to self
-      //     value = 0
-      //   }
-      //    if (value !== owner) value += owner
-      //   libertyBoard[libX][libY] = value
-      //   // console.log(`lib ${target} ${[libX,libY]} ${owner} ${value}`)
-      // }
     }
   }
   // console.log(libertyBoard)
   // draw board
-  const xLabels = Array(board.width).fill().map((_, index) => ` ${index}`).join('')
-  output += `${xLabels}\n`
+  // const xLabels = Array(board.width).fill().map((_, index) => `${index}`.padStart(2)).join('')
+  const xLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.slice(0,board.width).split('').join(' ')
+  output += `  ${xLabels}\n`
   for (const [yStr, row] of Object.entries(board.signMap)) {
-    output += yStr
+    output += yStr.padStart(2)
     for (const [xStr, piece] of Object.entries(row)) {
       const liberty = libertyBoard[yStr][xStr]
       output += renderPiece(piece, liberty)
