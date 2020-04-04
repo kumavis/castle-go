@@ -1,37 +1,81 @@
 const Board = require('@sabaki/go-board')
 const chalk = require('chalk')
+const ai = require('./ai')
 
-let board = Board.fromDimensions(9)
+let board = Board.fromDimensions(19)
 let currentPlayer = 1
+let previousTurnDidPass = false
+const colors = {
+  '0': 'white',
+  '1': 'red',
+  '-1': 'blue',
+}
 
-;(async function () {
-  while (board.isValid()) {
-    takeTurn()
-    await timeout(1000)
+// ;(async function () {
+//   while (board.isValid()) {
+//     takeTurn()
+//     await timeout(1000)
+//   }
+// })()
+
+async function start() {
+  await ai.init(board)
+  while (board.isValid() && takeTurn(ai)) {
+    // await timeout(1000)
   }
-})()
+  const scores = calculateScores()
+  console.log(`
+  captures:
+    ${colors[ 1]}: ${scores[1].captures}
+    ${colors[-1]}: ${scores[-1].captures}
+  `)
+}
+start()
+
+function calculateScores () {
+  return {
+    '1': {
+      captures: board.getCaptures(1)
+    },
+    '-1': {
+      captures: board.getCaptures(-1)
+    },
+  }
+}
 
 function timeout (duration) {
   return new Promise(resolve => setTimeout(resolve, duration))
 }
 
-function takeTurn () {
-  const { move, pass } = calculateNextMove(board, currentPlayer)
+function takeTurn (ai) {
+  let gameActive = true
+  const { move, pass } = ai.calculateNextMove(board, currentPlayer)
   if (pass) {
     board = board.makeMove(0, [0,0], {
       preventOverwrite: true,
       preventSuicide: true,
       preventKo: true,
     })
+    // indicate game ended
+    if (previousTurnDidPass) {
+      gameActive = false
+    }
+    previousTurnDidPass = true
   } else {
     board = board.makeMove(currentPlayer, move, {
       preventOverwrite: true,
       preventSuicide: true,
       preventKo: true,
     })
+    // indicate the game ended
+    previousTurnDidPass = false
   }
+  // update current player to next
   currentPlayer = currentPlayer === 1 ? -1 : 1
+  // draw board
   drawBoard(board)
+  // indicate game state
+  return gameActive
 }
 
 function calculateNextMove (board, player) {
@@ -147,11 +191,6 @@ function renderPiece (piece, liberty) {
     '0': '  ',
     '-1': '██',
     '1': '██',
-  }
-  const colors = {
-    '0': 'white',
-    '1': 'red',
-    '-1': 'blue',
   }
   const partialColors = {
     '0': 'magenta',

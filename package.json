@@ -1,6 +1,9 @@
 {
   "dependencies": {
     "@sabaki/go-board": "^1.4.1",
+    "@tensorflow/tfjs": "^1.7.2",
+    "@tensorflow/tfjs-node": "^1.7.2",
+    "@tensorflow/tfjs-node-gpu": "^1.7.2",
     "chalk": "^4.0.0",
     "clone": "^2.1.2"
   }
