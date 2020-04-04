@@ -61,8 +61,10 @@ async function start() {
 
 function renderToViewState ({ board }, viewState) {
   viewState.lone = []
+  viewState.single = []
   viewState.straight = []
   viewState.corner = []
+  viewState.tee = []
   viewState.all = []
 
   const squareSize = 10
@@ -90,8 +92,6 @@ function renderToViewState ({ board }, viewState) {
           color: colors[piece],
           scale: 5.0,
           position: [xOffset + x * squareSize, -65.0, yOffset + y * squareSize],
-          // rotation: [0.0, (piece+1) * 1.57, 0.0]
-          // rotation: [0, 1.57 * direction, 0]
           rotation: [0, 1.57 * direction, 0]
         },
       )
@@ -106,22 +106,28 @@ function getShapeByNeighbors (neighbors) {
     case 0: {
       return ['lone', 0]
     }
-    // case 1: {
-    //   const direction = neighbors.indexOf(true)
-    //   return ['single', direction]
-    // }
+    case 1: {
+      const direction = [2,0,1,3][neighbors.indexOf(true)]
+      return ['single', direction]
+    }
     case 2: {
       const acrossX = (neighbors[0] && neighbors[1])
       if (acrossX) return ['straight', 0]
       const acrossY = (neighbors[2] && neighbors[3])
       if (acrossY) return ['straight', 1]
-      // const direction = (neighbors[1] ? 1 : 0)
-      //   + (neighbors[3] ? 2 : 0)
-      // return ['corner', direction]
+      const direction =
+        (neighbors[0] && neighbors[2]) ? 2 :
+        (neighbors[0] && neighbors[3]) ? 3 :
+        (neighbors[1] && neighbors[2]) ? 1 : 0
+      return ['corner', direction]
     }
-    // case 4: {
-    //   return ['all', 0]
-    // }
+    case 3: {
+      const direction = [1,3,0,2][neighbors.indexOf(false)]
+      return ['tee', direction]
+    }
+    case 4: {
+      return ['all', 0]
+    }
     default: {
       return ['lone', 0]
     }
@@ -135,10 +141,15 @@ function setupReglRenderer (viewState) {
   // configure initial camera view.
   camera.rotate([0.0, 0.0], [0.0, -0.4])
   camera.zoom(70.0)
+  // camera.lookAt(eye, center, up)
 
   const drawTower = {
-    lone: createObjDrawer(createLoneTower()),
+    lone: createObjDrawer(createTowerLone()),
+    single: createObjDrawer(createTowerSingle()),
     straight: createObjDrawer(createTowerStraight()),
+    corner: createObjDrawer(createTowerCorner()),
+    tee: createObjDrawer(createTowerTee()),
+    all: createObjDrawer(createTowerAll()),
   }
 
   regl.frame(() => {
@@ -278,7 +289,7 @@ function build4CornerShape (points) {
   }
 }
 
-function createLoneTower () {
+function createTowerLone () {
   const towerWidth = 0.4
   const nestHeightTaperStart = 0.5
   const base = build4CornerShape([
@@ -292,22 +303,67 @@ function createLoneTower () {
 }
 
 function createTowerStraight () {
-  const towerWidth = 0.4
-  const nestHeightTaperStart = 0.5
-  const base = build4CornerShape([
-    [towerWidth,0,towerWidth],
-    [towerWidth,nestHeightTaperStart,towerWidth],
-  ])
-  scaleByVec(base, [1/0.4,1,1])
+  const wallWidth = 0.4
+  const wallHeight = 0.5
+  const wall = createCube()
+  scaleByVec(wall, [2,wallHeight,wallWidth])
+  return wall
+}
+
+function createTowerSingle () {
   return composeShapes([
-    base,
-    createTowerTop(),
+    createWalls()[0],
+    createTowerLone(),
   ])
+}
+
+function createTowerCorner () {
+  return composeShapes([
+    ...createWalls().slice(0,2),
+    createTowerLone(),
+  ])
+}
+
+function createTowerTee () {
+  return composeShapes([
+    ...createWalls().slice(0,3),
+    createTowerLone(),
+  ])
+}
+
+function createTowerAll () {
+  return composeShapes([
+    ...createWalls(),
+    createTowerLone(),
+  ])
+}
+
+function createWalls () {
+  const wallWidth = 0.4
+  const wallHeight = 0.5
+  const scaleTrans = [
+    [[1,wallHeight,wallWidth], [0.5,0,0]],
+    [[wallWidth,wallHeight,1], [0,0,0.5]],
+    [[1,wallHeight,wallWidth], [-0.5,0,0]],
+    [[wallWidth,wallHeight,1], [0,0,-0.5]],
+  ]
+  return scaleTrans.map(([scale, trans]) => {
+    const wall = createCube()
+    scaleByVec(wall, scale)
+    translateByVec(wall, trans)
+    return wall
+  })
 }
 
 function scaleByVec (shape, ampVec) {
   shape.positions = shape.positions.map(vec => {
     return [vec[0] * ampVec[0], vec[1] * ampVec[1], vec[2] * ampVec[2]]
+  })
+}
+
+function translateByVec (shape, ampVec) {
+  shape.positions = shape.positions.map(vec => {
+    return [vec[0] + ampVec[0], vec[1] + ampVec[1], vec[2] + ampVec[2]]
   })
 }
 
@@ -342,4 +398,26 @@ function composeShapes (shapes) {
   })
 
   return { positions, cells }
+}
+
+function createCube () {
+  const cube = {
+    positions: [
+      [-0.5, 1, +0.5], [+0.5, 1, +0.5], [+0.5, 0, +0.5], [-0.5, 0, +0.5], // positive z face.
+      [+0.5, 1, +0.5], [+0.5, 1, -0.5], [+0.5, 0, -0.5], [+0.5, 0, +0.5], // positive x face
+      [+0.5, 1, -0.5], [-0.5, 1, -0.5], [-0.5, 0, -0.5], [+0.5, 0, -0.5], // negative z face
+      [-0.5, 1, -0.5], [-0.5, 1, +0.5], [-0.5, 0, +0.5], [-0.5, 0, -0.5], // negative x face.
+      [-0.5, 1, -0.5], [+0.5, 1, -0.5], [+0.5, 1, +0.5], [-0.5, 1, +0.5], // top face
+      [-0.5, 0, -0.5], [+0.5, 0, -0.5], [+0.5, 0, +0.5], [-0.5, 0, +0.5]  // bottom face
+    ],
+    cells: [
+      [2, 1, 0], [2, 0, 3],       // positive z face.
+      [6, 5, 4], [6, 4, 7],       // positive x face.
+      [10, 9, 8], [10, 8, 11],    // negative z face.
+      [14, 13, 12], [14, 12, 15], // negative x face.
+      [18, 17, 16], [18, 16, 19], // top face.
+      [20, 21, 22], [23, 20, 22]  // bottom face
+    ]
+  }
+  return cube
 }
