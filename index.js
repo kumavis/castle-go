@@ -1,7 +1,9 @@
 const Board = require('@sabaki/go-board')
 const chalk = require('chalk')
-// const ai = require('./ais/leelazero-40x256')
-const ai = require('./ais/leelazero-10x128')
+// const leelaBig = require('./ais/leelazero-40x256')
+const leelaSmall = require('./ais/leelazero-10x128')
+const randobot = require('./ais/randobot')
+const { composeBot } = require('./ais/composeBot')
 
 let board = Board.fromDimensions(19)
 let currentPlayer = 1
@@ -12,9 +14,21 @@ const colors = {
   '-1': 'blue',
 }
 
+// const halfDumbBot = composeBot([
+//   [50, leelaSmall],
+//   [50, randobot],
+// ])
+const halfDumbBot = composeBot([
+  [80, leelaSmall],
+  [20, randobot],
+])
+
+start()
+
+
 async function start() {
-  await ai.init(board)
-  while (board.isValid() && takeTurn(ai)) {
+  await halfDumbBot.init(board)
+  while (board.isValid() && takeTurn(halfDumbBot)) {
     // await timeout(1000)
   }
   const scores = calculateScores()
@@ -24,7 +38,6 @@ async function start() {
     ${colors[-1]}: ${scores[-1].captures}
   `)
 }
-start()
 
 function calculateScores () {
   return {
