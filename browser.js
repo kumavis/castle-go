@@ -1,3 +1,11 @@
+const mat4 = require('gl-mat4')
+const fit = require('canvas-fit')
+const normals = require('angle-normals')
+const canvas = document.body.appendChild(document.createElement('canvas'))
+const regl = require('regl')({ canvas, extensions: ['angle_instanced_arrays']})
+const camera = require('canvas-orbit-camera')(canvas)
+window.addEventListener('resize', fit(canvas), false)
+
 const { createGame } = require('./game')
 const leelaSmall = require('./ais/leelazero-10x128')
 const randobot = require('./ais/randobot')
@@ -34,9 +42,7 @@ async function start() {
   game.takeTurn(halfDumbBot)
   console.log('ready', game)
 
-  const viewState = {
-    stones: [],
-  }
+  const viewState = {}
   setupReglRenderer(viewState)
 
 
@@ -54,9 +60,14 @@ async function start() {
 }
 
 function renderToViewState ({ board }, viewState) {
-  const stones = viewState.stones = []
-  const xOffset = -160
-  const yOffset = -160
+  viewState.lone = []
+  viewState.straight = []
+  viewState.corner = []
+  viewState.all = []
+
+  const squareSize = 10
+  const xOffset = -1 * board.width * squareSize / 2
+  const yOffset = -1 * board.height * squareSize / 2
   const colors = {
     '1': [0.7, 0.4, 0.1],
     '-1': [0.4, 0.2, 0.6],
@@ -68,64 +79,77 @@ function renderToViewState ({ board }, viewState) {
       // chalk[colors[piece]](symbols[piece])
       const x = Number(xStr)
       const y = Number(yStr)
-      stones.push(
+      // get friendly neighbors
+      // we map instead of filter to maintain shape
+      const neighbors = [[x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]]
+        .map(v => board.has(v) && board.get(v) === piece)
+      const [shapeType, direction] = getShapeByNeighbors(neighbors)
+
+      viewState[shapeType].push(
         {
           color: colors[piece],
           scale: 5.0,
-          position: [xOffset + x * 10, -65.0, yOffset + y * 10],
-          rotation: [0.0, (piece+1) * 1.57, 0.0]
+          position: [xOffset + x * squareSize, -65.0, yOffset + y * squareSize],
+          // rotation: [0.0, (piece+1) * 1.57, 0.0]
+          // rotation: [0, 1.57 * direction, 0]
+          rotation: [0, 1.57 * direction, 0]
         },
       )
     }
   }
 }
 
-function setupReglRenderer (viewState) {
-  // const regl = require('../regl')()
-  // const mat4 = require('gl-mat4')
+function getShapeByNeighbors (neighbors) {
+  const count = neighbors.filter(Boolean).length
 
-  const cube = {
-    positions: [
-      [-0.5, +0.5, +0.5], [+0.5, +0.5, +0.5], [+0.5, -0.5, +0.5], [-0.5, -0.5, +0.5], // positive z face.
-      [+0.5, +0.5, +0.5], [+0.5, +0.5, -0.5], [+0.5, -0.5, -0.5], [+0.5, -0.5, +0.5], // positive x face
-      [+0.5, +0.5, -0.5], [-0.5, +0.5, -0.5], [-0.5, -0.5, -0.5], [+0.5, -0.5, -0.5], // negative z face
-      [-0.5, +0.5, -0.5], [-0.5, +0.5, +0.5], [-0.5, -0.5, +0.5], [-0.5, -0.5, -0.5], // negative x face.
-      [-0.5, +0.5, -0.5], [+0.5, +0.5, -0.5], [+0.5, +0.5, +0.5], [-0.5, +0.5, +0.5], // top face
-      [-0.5, -0.5, -0.5], [+0.5, -0.5, -0.5], [+0.5, -0.5, +0.5], [-0.5, -0.5, +0.5]  // bottom face
-    ],
-    cells: [
-      [2, 1, 0], [2, 0, 3],       // positive z face.
-      [6, 5, 4], [6, 4, 7],       // positive x face.
-      [10, 9, 8], [10, 8, 11],    // negative z face.
-      [14, 13, 12], [14, 12, 15], // negative x face.
-      [18, 17, 16], [18, 16, 19], // top face.
-      [20, 21, 22], [23, 20, 22]  // bottom face
-    ]
+  switch (count) {
+    case 0: {
+      return ['lone', 0]
+    }
+    // case 1: {
+    //   const direction = neighbors.indexOf(true)
+    //   return ['single', direction]
+    // }
+    case 2: {
+      const acrossX = (neighbors[0] && neighbors[1])
+      if (acrossX) return ['straight', 0]
+      const acrossY = (neighbors[2] && neighbors[3])
+      if (acrossY) return ['straight', 1]
+      // const direction = (neighbors[1] ? 1 : 0)
+      //   + (neighbors[3] ? 2 : 0)
+      // return ['corner', direction]
+    }
+    // case 4: {
+    //   return ['all', 0]
+    // }
+    default: {
+      return ['lone', 0]
+    }
   }
-  const tower = createTowerShape()
 
-  const mat4 = require('gl-mat4')
-  // const bunny = require('bunny')
-  const fit = require('canvas-fit')
-  const normals = require('angle-normals')
 
-  const canvas = document.body.appendChild(document.createElement('canvas'))
-  const regl = require('regl')({ canvas, extensions: ['angle_instanced_arrays']})
-  const camera = require('canvas-orbit-camera')(canvas)
-  window.addEventListener('resize', fit(canvas), false)
+}
+
+function setupReglRenderer (viewState) {
 
   // configure initial camera view.
   camera.rotate([0.0, 0.0], [0.0, -0.4])
   camera.zoom(70.0)
 
-  const drawStones = createObjDrawer(tower)
+  const drawTower = {
+    lone: createObjDrawer(createLoneTower()),
+    straight: createObjDrawer(createTowerStraight()),
+  }
 
   regl.frame(() => {
     regl.clear({
       color: [0, 0, 0, 1]
     })
 
-    drawStones(viewState.stones)
+    Object.entries(viewState).forEach(([type, items]) => {
+      if (!items.length) return
+      drawTower[type](items)
+    })
 
     camera.tick()
   })
@@ -189,8 +213,8 @@ function setupReglRenderer (viewState) {
                             3000),
 
         // light settings. These can of course by tweaked to your likings.
-        lightDir: [0.39, 0.87, 0.29],
-        ambientLightAmount: 0.3,
+        lightDir: [0.5, -0.5, -0.5],
+        ambientLightAmount: 0.4,
         diffuseLightAmount: 0.7
       },
     })
@@ -198,106 +222,14 @@ function setupReglRenderer (viewState) {
 
 }
 
-
-function renderBoard (board) {
-  let output = ''
-  // build liberties
-  const libertyBoard = Array(board.height).fill().map(() => Array(board.width).fill())
-  for (const [yStr, row] of Object.entries(board.signMap)) {
-    for (const [xStr, owner] of Object.entries(row)) {
-      const target = [Number(xStr), Number(yStr)]
-      const [x, y] = target
-      // if (owner === 0) continue
-      const ownedNeighbors = board.getNeighbors(target)
-        .map(v => board.get(v))
-        .filter(o => o !== 0)
-      const hasPos = ownedNeighbors.includes(1)
-      const hasNeg = ownedNeighbors.includes(-1)
-      const hasBoth = hasPos && hasNeg
-      const hasNeither = !hasPos && !hasNeg
-      const value = hasBoth ? 0
-        : hasNeither ? undefined
-        : hasPos ? 1
-        : -1
-      libertyBoard[y][x] = value
-    }
-  }
-  // console.log(libertyBoard)
-  // draw board
-  // const xLabels = Array(board.width).fill().map((_, index) => `${index}`.padStart(2)).join('')
-  const xLabels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.slice(0,board.width).split('').join(' ')
-  output += `  ${xLabels}\n`
-  for (const [yStr, row] of Object.entries(board.signMap)) {
-    output += yStr.padStart(2)
-    for (const [xStr, piece] of Object.entries(row)) {
-      const liberty = libertyBoard[yStr][xStr]
-      output += renderPiece(piece, liberty)
-    }
-    output += '\n'
-  }
-  console.log(output)
-}
-
-function renderPiece (piece, liberty) {
-  // " ░▒▓█"
-  // ▘▗ ▚ ▞
-  // ▔▏
-  const partial = '░░'
-  const symbols = {
-    '0': '  ',
-    '-1': '██',
-    '1': '██',
-  }
-  const partialColors = {
-    '0': 'magenta',
-    '1': 'red',
-    '-1': 'blue',
-  }
-  if (piece === 0 && liberty !== undefined) {
-    return chalk[partialColors[liberty]](partial)
-  } else {
-    return chalk[colors[piece]](symbols[piece])
-  }
-}
-
 function timeout (duration) {
   return new Promise(resolve => setTimeout(resolve, duration))
 }
 
 function build4CornerShape (points) {
-  const positions = [
-    // [-0.5, +0.5, +0.5], [+0.5, +0.5, +0.5], [+0.5, -0.5, +0.5], [-0.5, -0.5, +0.5], // positive z face.
-    // [+0.5, +0.5, +0.5], [+0.5, +0.5, -0.5], [+0.5, -0.5, -0.5], [+0.5, -0.5, +0.5], // positive x face
-    // [+0.5, +0.5, -0.5], [-0.5, +0.5, -0.5], [-0.5, -0.5, -0.5], [+0.5, -0.5, -0.5], // negative z face
-    // [-0.5, +0.5, -0.5], [-0.5, +0.5, +0.5], [-0.5, -0.5, +0.5], [-0.5, -0.5, -0.5], // negative x face.
-    // [-0.5, +0.5, -0.5], [+0.5, +0.5, -0.5], [+0.5, +0.5, +0.5], [-0.5, +0.5, +0.5], // top face
-    // [-0.5, -0.5, -0.5], [+0.5, -0.5, -0.5], [+0.5, -0.5, +0.5], [-0.5, -0.5, +0.5]  // bottom face
-  ],
-  cells = [
-    // [2, 1, 0], [2, 0, 3],       // positive z face.
-    // [6, 5, 4], [6, 4, 7],       // positive x face.
-    // [10, 9, 8], [10, 8, 11],    // negative z face.
-    // [14, 13, 12], [14, 12, 15], // negative x face.
-    // [18, 17, 16], [18, 16, 19], // top face.
-    // [20, 21, 22], [23, 20, 22]  // bottom face
-  ],
-  shape = { positions, cells }
-
-  // const initialPoint = points[0]
-  // positions.push(initialPoint)
-  // const nextPoint = points[1]
-  // // create all triangles between initalPoint and first point
-  // const fourPoints = getSymmetry(nextPoint)
-  // fourPoints.forEach(point => positions.push(point))
-  // makeTriangle(initialPoint, fourPoints[0], fourPoints[1])
-  // makeTriangle(initialPoint, fourPoints[1], fourPoints[2])
-  // makeTriangle(initialPoint, fourPoints[2], fourPoints[3])
-  // makeTriangle(initialPoint, fourPoints[3], fourPoints[0])
-  // // create all faces between two points
-  // const secondPoint = points[2]
-  // const nextFourPoints = getSymmetry(secondPoint)
-  // nextFourPoints.forEach(point => positions.push(point))
-  // makeFacesFromSymmetries(fourPoints, nextFourPoints)
+  const positions = []
+  const cells = []
+  const shape = { positions, cells }
 
   let prevFour
   let nextFour
@@ -311,10 +243,6 @@ function build4CornerShape (points) {
     // make faces
     makeFacesFromSymmetries(prevFour, nextFour)
   }
-
-  // console.log(initialPoint)
-  // console.log(fourPoints)
-  // console.log(nextFourPoints)
 
   return shape
 
@@ -350,18 +278,68 @@ function build4CornerShape (points) {
   }
 }
 
-function createTowerShape () {
+function createLoneTower () {
   const towerWidth = 0.4
-  const nestWidth = 0.5
   const nestHeightTaperStart = 0.5
+  const base = build4CornerShape([
+    [towerWidth,0,towerWidth],
+    [towerWidth,nestHeightTaperStart,towerWidth],
+  ])
+  return composeShapes([
+    base,
+    createTowerTop(),
+  ])
+}
+
+function createTowerStraight () {
+  const towerWidth = 0.4
+  const nestHeightTaperStart = 0.5
+  const base = build4CornerShape([
+    [towerWidth,0,towerWidth],
+    [towerWidth,nestHeightTaperStart,towerWidth],
+  ])
+  scaleByVec(base, [1/0.4,1,1])
+  return composeShapes([
+    base,
+    createTowerTop(),
+  ])
+}
+
+function scaleByVec (shape, ampVec) {
+  shape.positions = shape.positions.map(vec => {
+    return [vec[0] * ampVec[0], vec[1] * ampVec[1], vec[2] * ampVec[2]]
+  })
+}
+
+function createTowerTop () {
+  const towerWidth = 0.4
+  const nestHeightTaperStart = 0.5
+  const nestWidth = 0.5
   const nestHeight = 0.6
   const nestCeiling = 0.9
   const nestRooftop = 1
   return build4CornerShape([
-    [towerWidth,0,towerWidth],
     [towerWidth,nestHeightTaperStart,towerWidth],
     [nestWidth,nestHeight,nestWidth],
     [nestWidth,nestCeiling,nestWidth],
     [0,nestRooftop,0],
   ])
+}
+
+function composeShapes (shapes) {
+  // first shape doesnt need offsetting
+  let { positions, cells } = shapes[0]
+  let offset = positions.length
+  // offset all other shapes
+  shapes.slice(1).forEach((shape) => {
+    // add positions
+    positions = positions.concat(shape.positions)
+    // offset and add cells
+    const newCells = shape.cells.map(cell => cell.map(index => index + offset))
+    cells = cells.concat(newCells)
+    // update offset
+    offset += shape.positions.length
+  })
+
+  return { positions, cells }
 }
