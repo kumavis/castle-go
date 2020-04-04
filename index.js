@@ -1,17 +1,10 @@
-// patch for browserify
-const util = require('util')
-util.promisify = util.promisify || require('util-promisify')
-
-const Board = require('@sabaki/go-board')
 const chalk = require('chalk')
-// const leelaBig = require('./ais/leelazero-40x256')
+const { createGame } = require('./game')
 const leelaSmall = require('./ais/leelazero-10x128')
+// const leelaBig = require('./ais/leelazero-40x256')
 const randobot = require('./ais/randobot')
 const { composeBot } = require('./ais/composeBot')
 
-let board = Board.fromDimensions(19)
-let currentPlayer = 1
-let previousTurnDidPass = false
 const colors = {
   '0': 'white',
   '1': 'red',
@@ -31,11 +24,14 @@ start()
 
 
 async function start() {
-  await halfDumbBot.init(board)
-  while (board.isValid() && takeTurn(halfDumbBot)) {
-    // await timeout(1000)
+  const game = createGame()
+  await halfDumbBot.init(game.board)
+  while (game.board.isValid() && game.takeTurn(halfDumbBot)) {
+    // draw board
+    renderBoard(game.board)
+    await timeout(0)
   }
-  const scores = calculateScores()
+  const scores = game.calculateScores()
   console.log(`
   captures:
     ${colors[ 1]}: ${scores[1].captures}
@@ -43,51 +39,6 @@ async function start() {
   `)
 }
 
-function calculateScores () {
-  return {
-    '1': {
-      captures: board.getCaptures(1)
-    },
-    '-1': {
-      captures: board.getCaptures(-1)
-    },
-  }
-}
-
-function timeout (duration) {
-  return new Promise(resolve => setTimeout(resolve, duration))
-}
-
-function takeTurn (ai) {
-  let gameActive = true
-  const { move, pass } = ai.calculateNextMove(board, currentPlayer)
-  if (pass) {
-    board = board.makeMove(0, [0,0], {
-      preventOverwrite: true,
-      preventSuicide: true,
-      preventKo: true,
-    })
-    // indicate game ended
-    if (previousTurnDidPass) {
-      gameActive = false
-    }
-    previousTurnDidPass = true
-  } else {
-    board = board.makeMove(currentPlayer, move, {
-      preventOverwrite: true,
-      preventSuicide: true,
-      preventKo: true,
-    })
-    // indicate the game ended
-    previousTurnDidPass = false
-  }
-  // update current player to next
-  currentPlayer = currentPlayer === 1 ? -1 : 1
-  // draw board
-  renderBoard(board)
-  // indicate game state
-  return gameActive
-}
 
 function renderBoard (board) {
   let output = ''
@@ -148,4 +99,8 @@ function renderPiece (piece, liberty) {
   } else {
     return chalk[colors[piece]](symbols[piece])
   }
+}
+
+function timeout (duration) {
+  return new Promise(resolve => setTimeout(resolve, duration))
 }

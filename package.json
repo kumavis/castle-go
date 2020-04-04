@@ -4,8 +4,14 @@
     "@tensorflow/tfjs": "^1.7.2",
     "@tensorflow/tfjs-node": "^1.7.2",
     "@tensorflow/tfjs-node-gpu": "^1.7.2",
+    "angle-normals": "^1.0.0",
+    "bunny": "^1.0.1",
+    "canvas-fit": "^1.5.0",
+    "canvas-orbit-camera": "^1.0.2",
     "chalk": "^4.0.0",
     "clone": "^2.1.2",
+    "gl-mat4": "^1.2.0",
+    "regl": "^1.4.2",
     "util-promisify": "^2.1.0"
   },
   "devDependencies": {
@@ -13,6 +19,6 @@
     "browserify": "^16.5.1"
   },
   "scripts": {
-    "start": "beefy index.js"
+    "start": "beefy browser.js"
   }
 }

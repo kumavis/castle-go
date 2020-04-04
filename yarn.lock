@@ -159,6 +159,11 @@ agent-base@^4.3.0:
   dependencies:
     es6-promisify "^5.0.0"
 
+angle-normals@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/angle-normals/-/angle-normals-1.0.0.tgz#958574986aa3f02946a45cd108cb2a3b8907c9ac"
+  integrity sha1-lYV0mGqj8ClGpFzRCMsqO4kHyaw=
+
 ansi-regex@^2.0.0:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/ansi-regex/-/ansi-regex-2.1.1.tgz#c3b33ab5ee360d86e0e628f0468ae7ef27d654df"
@@ -529,6 +534,11 @@ builtin-status-codes@^3.0.0:
   resolved "https://registry.yarnpkg.com/builtin-status-codes/-/builtin-status-codes-3.0.0.tgz#85982878e21b98e1c66425e03d0174788f569ee8"
   integrity sha1-hZgoeOIbmOHGZCXgPQF0eI9Wnug=
 
+bunny@^1.0.1:
+  version "1.0.1"
+  resolved "https://registry.yarnpkg.com/bunny/-/bunny-1.0.1.tgz#86383da45ab7a99571a5a572b7be0e3564815f9e"
+  integrity sha1-hjg9pFq3qZVxpaVyt74ONWSBX54=
+
 cache-base@^1.0.1:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/cache-base/-/cache-base-1.0.1.tgz#0a7f46416831c8b662ee36fe4e7c59d76f666ab2"
@@ -548,6 +558,24 @@ cached-path-relative@^1.0.0, cached-path-relative@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/cached-path-relative/-/cached-path-relative-1.0.2.tgz#a13df4196d26776220cc3356eb147a52dba2c6db"
   integrity sha512-5r2GqsoEb4qMTTN9J+WzXfjov+hjxT+j3u5K+kIVNIwAd99DLCJE9pBIMP1qVeybV6JiijL385Oz0DcYxfbOIg==
+
+canvas-fit@^1.5.0:
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/canvas-fit/-/canvas-fit-1.5.0.tgz#ae13be66ade42f5be0e487e345fce30a5e5b5e5f"
+  integrity sha1-rhO+Zq3kL1vg5IfjRfzjCl5bXl8=
+  dependencies:
+    element-size "^1.1.1"
+
+canvas-orbit-camera@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/canvas-orbit-camera/-/canvas-orbit-camera-1.0.2.tgz#11a199d4efd69a2f4954700a53a03d567aa397d8"
+  integrity sha1-EaGZ1O/Wmi9JVHAKU6A9Vnqjl9g=
+  dependencies:
+    key-pressed "0.0.1"
+    mouse-position "^1.0.0"
+    mouse-pressed "0.0.1"
+    orbit-camera "0.0.3"
+    scroll-speed "^1.0.0"
 
 chalk@^4.0.0:
   version "4.0.0"
@@ -889,6 +917,11 @@ editions@^2.2.0:
     errlop "^2.0.0"
     semver "^6.3.0"
 
+element-size@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/element-size/-/element-size-1.1.1.tgz#64e5f159d97121631845bcbaecaf279c39b5e34e"
+  integrity sha1-ZOXxWdlxIWMYRby67K8nnDm1404=
+
 elliptic@^6.0.0:
   version "6.5.2"
   resolved "https://registry.yarnpkg.com/elliptic/-/elliptic-6.5.2.tgz#05c5678d7173c049d8ca433552224a495d0e3762"
@@ -944,6 +977,11 @@ es6-promisify@^5.0.0:
   integrity sha1-UQnWLz5W6pZ8S2NQWu8IKRyKUgM=
   dependencies:
     es6-promise "^4.0.3"
+
+events@^1.0.0, events@^1.0.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/events/-/events-1.1.1.tgz#9ebdb7635ad099c70dcc4c2a1f5004288e8bd924"
+  integrity sha1-nr23Y1rQmccNzEwqH1AEKI6L2SQ=
 
 events@^2.0.0:
   version "2.1.0"
@@ -1140,6 +1178,16 @@ get-value@^2.0.3, get-value@^2.0.6:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/get-value/-/get-value-2.0.6.tgz#dc15ca1c672387ca76bd37ac0a395ba2042a2c28"
   integrity sha1-3BXKHGcjh8p2vTesCjlbogQqLCg=
+
+gl-mat4@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/gl-mat4/-/gl-mat4-1.2.0.tgz#49d8a7636b70aa00819216635f4a3fd3f4669b26"
+  integrity sha512-sT5C0pwB1/e9G9AvAoLsoaJtbMGjfd/jfxo8jMCKqYYEnjZuFvqV5rehqar0538EmssjdDeiEWnKyBSTw7quoA==
+
+gl-matrix@^2.2.0:
+  version "2.8.1"
+  resolved "https://registry.yarnpkg.com/gl-matrix/-/gl-matrix-2.8.1.tgz#1c7873448eac61d2cd25803a074e837bd42581a3"
+  integrity sha512-0YCjVpE3pS5XWlN3J4X7AiAx65+nqAI54LndtVFnQZB6G/FVLkZH8y8V6R3cIoOQR4pUdfwQGd1iwyoXHJ4Qfw==
 
 glob-base@^0.3.0:
   version "0.3.0"
@@ -1595,6 +1643,13 @@ jsonparse@^1.2.0:
   resolved "https://registry.yarnpkg.com/jsonparse/-/jsonparse-1.3.1.tgz#3f4dae4a91fac315f71062f8521cc239f1366280"
   integrity sha1-P02uSpH6wxX3EGL4UhzCOfE2YoA=
 
+key-pressed@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/key-pressed/-/key-pressed-0.0.1.tgz#d682fb4c7c1042929a5bc88636728ca71220debb"
+  integrity sha1-1oL7THwQQpKaW8iGNnKMpxIg3rs=
+  dependencies:
+    vkey "0.0.3"
+
 kind-of@^3.0.2, kind-of@^3.0.3, kind-of@^3.2.0:
   version "3.2.2"
   resolved "https://registry.yarnpkg.com/kind-of/-/kind-of-3.2.2.tgz#31ea21a734bab9bbb0f32466d893aea51e4a3c64"
@@ -1819,6 +1874,20 @@ module-deps@^6.0.0:
     through2 "^2.0.0"
     xtend "^4.0.0"
 
+mouse-position@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/mouse-position/-/mouse-position-1.0.0.tgz#ff849391499d28d3977fc1639ae50d1f9aa87c99"
+  integrity sha1-/4STkUmdKNOXf8FjmuUNH5qofJk=
+  dependencies:
+    events "^1.0.1"
+
+mouse-pressed@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/mouse-pressed/-/mouse-pressed-0.0.1.tgz#1e62ae992d7966177e5ffc49c839128e1b27b7bb"
+  integrity sha1-HmKumS15Zhd+X/xJyDkSjhsnt7s=
+  dependencies:
+    events "^1.0.1"
+
 ms@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"
@@ -2012,6 +2081,13 @@ open@0.0.3:
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/open/-/open-0.0.3.tgz#fa377f4ff308212d92a9b8e6395240854646a713"
   integrity sha1-+jd/T/MIIS2SqbjmOVJAhUZGpxM=
+
+orbit-camera@0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/orbit-camera/-/orbit-camera-0.0.3.tgz#4f949d1758fb967ec2a678fdfac4cbbdca57a06f"
+  integrity sha1-T5SdF1j7ln7Cpnj9+sTLvcpXoG8=
+  dependencies:
+    gl-matrix "^2.2.0"
 
 os-browserify@~0.3.0:
   version "0.3.0"
@@ -2289,6 +2365,11 @@ regex-not@^1.0.0, regex-not@^1.0.2:
     extend-shallow "^3.0.2"
     safe-regex "^1.1.0"
 
+regl@^1.4.2:
+  version "1.4.2"
+  resolved "https://registry.yarnpkg.com/regl/-/regl-1.4.2.tgz#6593c38868b569ea68410364048360367a21e813"
+  integrity sha512-wc/kE6kGmGfQk3G9f1Pai4TZ0K1pWxkD1Jeaj6CxJwEiB1jwHgEpqD84G2t7F0DmNXfQh7IUnoG1opxoONJ7Xg==
+
 remove-trailing-separator@^1.0.1:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/remove-trailing-separator/-/remove-trailing-separator-1.1.0.tgz#c24bce2a283adad5bc3f58e0d48249b92379d8ef"
@@ -2386,6 +2467,14 @@ script-injector@~1.0.0:
     duplexer2 "0.0.2"
     through2 "^0.6.5"
     trumpet "^1.7.1"
+
+scroll-speed@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/scroll-speed/-/scroll-speed-1.0.0.tgz#dcfe409516e76175597b6060002b51ce72ee6ed7"
+  integrity sha1-3P5AlRbnYXVZe2BgACtRznLubtc=
+  dependencies:
+    events "^1.0.0"
+    wheel "0.0.0"
 
 seedrandom@2.4.3:
   version "2.4.3"
@@ -2871,10 +2960,20 @@ util@~0.10.1:
   dependencies:
     inherits "2.0.3"
 
+vkey@0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/vkey/-/vkey-0.0.3.tgz#634dd7952eb2c11531bf1859f0e6d419478033df"
+  integrity sha1-Y03XlS6ywRUxvxhZ8ObUGUeAM98=
+
 vm-browserify@^1.0.0:
   version "1.1.2"
   resolved "https://registry.yarnpkg.com/vm-browserify/-/vm-browserify-1.1.2.tgz#78641c488b8e6ca91a75f511e7a3b32a86e5dda0"
   integrity sha512-2ham8XPWTONajOR0ohOKOHXkm3+gaBmGut3SRuu75xLd/RRaY6vqgh8NBYYk7+RW3u5AtzPQZG8F10LHkl0lAQ==
+
+wheel@0.0.0:
+  version "0.0.0"
+  resolved "https://registry.yarnpkg.com/wheel/-/wheel-0.0.0.tgz#04ff9be987175deb1edd4f2482e8b657f32a4165"
+  integrity sha1-BP+b6YcXXese3U8kgui2V/MqQWU=
 
 which@^1.0.5:
   version "1.3.1"
