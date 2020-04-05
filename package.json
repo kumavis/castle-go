@@ -11,8 +11,11 @@
     "chalk": "^4.0.0",
     "clone": "^2.1.2",
     "gl-mat4": "^1.2.0",
+    "gl-quat": "^1.0.0",
+    "now": "^17.1.1",
     "regl": "^1.4.2",
     "regl-camera": "^2.1.1",
+    "turntable-camera-controller": "^3.0.1",
     "util-promisify": "^2.1.0"
   },
   "devDependencies": {
@@ -20,6 +23,6 @@
     "browserify": "^16.5.1"
   },
   "scripts": {
-    "start": "beefy browser.js"
+    "start": "beefy browser/ --live"
   }
 }

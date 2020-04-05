@@ -3,13 +3,14 @@ const fit = require('canvas-fit')
 const normals = require('angle-normals')
 const canvas = document.body.appendChild(document.createElement('canvas'))
 const regl = require('regl')({ canvas, extensions: ['angle_instanced_arrays']})
-const camera = require('canvas-orbit-camera')(canvas)
+const createCamera = require('regl-camera')
 window.addEventListener('resize', fit(canvas), false)
+const now = require('right-now')
 
-const { createGame } = require('./game')
-const leelaSmall = require('./ais/leelazero-10x128')
-const randobot = require('./ais/randobot')
-const { composeBot } = require('./ais/composeBot')
+const { createGame } = require('../game')
+const leelaSmall = require('../ais/leelazero-10x128')
+const randobot = require('../ais/randobot')
+const { composeBot } = require('../ais/composeBot')
 
 const colors = {
   '0': 'white',
@@ -91,7 +92,7 @@ function renderToViewState ({ board }, viewState) {
         {
           color: colors[piece],
           scale: 5.0,
-          position: [xOffset + x * squareSize, -65.0, yOffset + y * squareSize],
+          position: [xOffset + x * squareSize, 0, yOffset + y * squareSize],
           rotation: [0, 1.57 * direction, 0]
         },
       )
@@ -138,10 +139,12 @@ function getShapeByNeighbors (neighbors) {
 
 function setupReglRenderer (viewState) {
 
-  // configure initial camera view.
-  camera.rotate([0.0, 0.0], [0.0, -0.4])
-  camera.zoom(70.0)
-  // camera.lookAt(eye, center, up)
+  const camera = createCamera(regl, {
+    center: [0,0,0],
+    theta: 0.823,
+    phi: 0.299,
+    distance: 100,
+  })
 
   const drawTower = {
     lone: createObjDrawer(createTowerLone()),
@@ -153,16 +156,16 @@ function setupReglRenderer (viewState) {
   }
 
   regl.frame(() => {
-    regl.clear({
-      color: [0, 0, 0, 1]
-    })
+    camera(() => {
+      regl.clear({
+        color: [0, 0, 0, 1]
+      })
 
-    Object.entries(viewState).forEach(([type, items]) => {
-      if (!items.length) return
-      drawTower[type](items)
+      Object.entries(viewState).forEach(([type, items]) => {
+        if (!items.length) return
+        drawTower[type](items)
+      })
     })
-
-    camera.tick()
   })
 
   function createObjDrawer (obj) {
@@ -214,15 +217,6 @@ function setupReglRenderer (viewState) {
           return m
         },
         color: regl.prop('color'),
-        // View Projection matrices.
-        view: () => camera.view(),
-        projection: ({viewportWidth, viewportHeight}) =>
-          mat4.perspective([],
-                            Math.PI / 4,
-                            viewportWidth / viewportHeight,
-                            0.01,
-                            3000),
-
         // light settings. These can of course by tweaked to your likings.
         lightDir: [0.5, -0.5, -0.5],
         ambientLightAmount: 0.4,
