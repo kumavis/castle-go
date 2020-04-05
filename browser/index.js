@@ -172,25 +172,41 @@ function setupReglRenderer (viewState) {
     return regl({
       frag: `
       precision mediump float;
+
       varying vec3 vNormal;
+      varying mat4 modelView;
+
       uniform vec3 lightDir;
       uniform vec3 color;
       uniform float ambientLightAmount;
       uniform float diffuseLightAmount;
+
       void main () {
+        // taking the upper-left 3x3 matrix of the modelview matrix in lieu of the normal matrix
+        vec3 newNormal = mat3(modelView) * vNormal;
+        float cosTheta = clamp(dot(newNormal, lightDir), 0.0, 1.0);
+        vec3 diffuse = diffuseLightAmount * color * cosTheta;
+
         vec3 ambient = ambientLightAmount * color;
-        vec3 diffuse = diffuseLightAmount * color * clamp( dot(vNormal, lightDir ), 0.0, 1.0 );
+
         gl_FragColor = vec4(ambient + diffuse, 1.0);
       }`,
       vert: `
       precision mediump float;
+
+      uniform mat4 projection, model, view;
+
       attribute vec3 position;
       attribute vec3 normal;
+
       varying vec3 vNormal;
-      uniform mat4 projection, model, view;
+      varying mat4 modelView;
+
       void main () {
         vNormal = normal;
-        gl_Position = projection * view * model * vec4(position, 1.0);
+        modelView = view * model;
+
+        gl_Position = projection * modelView * vec4(position, 1);
       }`,
       attributes: {
         position: obj.positions,
