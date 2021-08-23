@@ -24,7 +24,7 @@ function createLeela ({ modelPath }) {
     boardHistory[BLACK] = Array(8).fill().map(() => get_empty_board(width, height))
     boardHistory[WHITE] = Array(8).fill().map(() => get_empty_board(width, height))
     // awaken the ai
-    console.log('Loading Model...')
+    console.error('Loading Model...')
     // const model_url = `file://${modelPath}/model.json`
     model = await loadModel(modelPath)
   }
