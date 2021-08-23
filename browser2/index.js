@@ -15,10 +15,12 @@ let mouseX = 0, mouseY = 0;
 let windowHalfX = window.innerWidth / 2;
 let windowHalfY = window.innerHeight / 2;
 
+const fullTurn = Math.PI * 2
+
 let loadingManager
 let models = {}
 
-let board
+let board = new GoBoard(gameHistory[0])
 let prevGameState = createGameState()
 let gameState = createGameState()
 
@@ -47,6 +49,7 @@ const sceneUpdaters = {
 init();
 await loadAllAssets();
 animate();
+drawGround(board)
 
 //
 globalThis.scene = scene
@@ -166,17 +169,27 @@ function updateScene () {
 }
 
 async function loadAllAssets () {
+  const redColor = { r: 210/255, g: 70/255, b: 30/255 }
+  const blueColor = { r: 80/255, g: 133/255, b: 188/255 }
   await Promise.all([
-    loadAsset('castle', 'models/tower-defense/Models/OBJ format/towerSquare_sampleA').promise,
+    loadAsset('castle-black', 'models/tower-defense/Models/OBJ format/towerSquare_sampleA').promise,
     loadAsset('knight-black', 'models/castle/Models/knightBlue').promise,
     loadAsset('knight-white', 'models/castle/Models/knightRed').promise,
+    loadAsset('ground-grass', 'models/nature/Models/OBJ format/ground_grass').promise,
+    loadAsset('cliff-top-rock', 'models/nature/Models/OBJ format/cliff_top_rock').promise,
+    loadAsset('plant-bush-small', 'models/nature/Models/OBJ format/plant_bushSmall').promise,
+    loadAsset('plant-lily-large', 'models/nature/Models/OBJ format/lily_large').promise,
   ])
-  models['knight-black'].object.rotation.y = 90
-
+  // tweak
+  models['ground-grass'].object.scale.multiplyScalar(10)
+  models['plant-bush-small'].object.scale.multiplyScalar(10)
+  models['plant-lily-large'].object.scale.multiplyScalar(10)
+  models['cliff-top-rock'].object.scale.multiplyScalar(10)
+  models['knight-white'].object.rotation.y = 1/4 * fullTurn
+  models['knight-black'].object.rotation.y = 3/8 * fullTurn
   // modify the asset to have 2 color versions
-  models.castle.object.scale.multiplyScalar(10)
-  models['castle-black'] = models['castle']
-  models['castle-white'] = { ...models['castle'], object: models['castle'].object.clone() }
+  models['castle-black'].object.scale.multiplyScalar(10)
+  models['castle-white'] = { ...models['castle-black'], object: models['castle-black'].object.clone() }
   // deep clone all materials
   models['castle-white'].object.traverse((node) => {
     if (node.isMesh) {
@@ -187,9 +200,59 @@ async function loadAllAssets () {
       }
     }
   });
-  // change primary color
-  const colorMaterial = models["castle-white"].object.children[0].material[1]
-  colorMaterial.color = { r: 50/255, g: 205/255, b: 50/255 }
+  // change primary colors
+  models["castle-black"].object.children[0].material[1].color = blueColor
+  models["castle-white"].object.children[0].material[1].color = redColor
+}
+
+function drawGround (board) {
+  const width = board.signMap[0].length
+  const height = board.signMap.length
+  // draw ground
+  for (const [y, row] of Object.entries(board.signMap)) {
+    for (const [x, value] of Object.entries(row)) {
+      const ground = models["ground-grass"].object.clone()
+      ground.position.x = Number(x) * 10
+      ground.position.z = Number(y) * 10
+      scene.add(ground)
+      // draw plants
+      if (Math.random() > 0.2) continue
+      const plants = ['plant-bush-small', 'plant-lily-large']
+      const type = plants[Math.floor(Math.random()*plants.length)]
+      const plant = models[type].object.clone()
+      plant.position.x = Number(x) * 10
+      plant.position.z = Number(y) * 10
+      scene.add(plant)
+    }
+  }
+  // draw cliff
+  for (const x in Array(width).fill()) {
+    const front = models["cliff-top-rock"].object.clone()
+    front.position.x = Number(x) * 10
+    front.position.z = height * 10
+    front.position.y = -10
+    scene.add(front)
+    const back = models["cliff-top-rock"].object.clone()
+    back.position.x = Number(x) * 10
+    back.position.z = -1 * 10
+    back.position.y = -10
+    back.rotation.y = 1/2 * fullTurn
+    scene.add(back)
+  }
+  for (const y in Array(height).fill()) {
+    const front = models["cliff-top-rock"].object.clone()
+    front.position.x = width * 10
+    front.position.z = Number(y) * 10
+    front.position.y = -10
+    front.rotation.y = 1/4 * fullTurn
+    scene.add(front)
+    const back = models["cliff-top-rock"].object.clone()
+    back.position.x = -1 * 10
+    back.position.z = Number(y) * 10
+    back.position.y = -10
+    back.rotation.y = 3/4 * fullTurn
+    scene.add(back)
+  }
 }
 
 function loadAsset (name, path) {
@@ -242,13 +305,13 @@ function animate() {
 }
 
 function render() {
-  const cameraCenterX = 250
-  const cameraCenterY = 0
+  camera.position.x += ( mouseX - (camera.position.x) ) * .05;
+  // camera.position.y += ( - mouseY - (camera.position.y) ) * .05;
 
-  camera.position.x += ( mouseX - (camera.position.x - cameraCenterX) ) * .05;
-  // camera.position.y += ( - mouseY - (camera.position.y - cameraCenterY) ) * .05;
-
-  camera.lookAt( scene.position );
+  const target = scene.position.clone()
+  target.x += board.width * 10 / 2
+  target.z += board.height * 10 / 2
+  camera.lookAt( target );
 
   renderer.render( scene, camera );
 
