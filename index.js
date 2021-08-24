@@ -19,6 +19,7 @@ const fullTurn = Math.PI * 2
 
 let loadingManager
 let models = {}
+globalThis.models = models
 
 let board = new GoBoard(gameHistory[0])
 let prevGameState = createGameState()
@@ -51,7 +52,6 @@ await loadAllAssets();
 animate();
 drawGround(board)
 
-//
 globalThis.scene = scene
 
 // play back game history
@@ -67,59 +67,127 @@ function createGameState () {
   return {
     'castle-white': {},
     'castle-black': {},
+    'tent-white': {},
+    'tent-black': {},
     'knight-white': {},
     'knight-black': {},
   }  
 }
 
-function buildLibertyBoard (board) {
+function createLibertyBoard (board) {
   // build liberties
-  const libertyBoard = Array(board.height).fill().map(() => Array(board.width).fill())
-  for (const [yStr, row] of Object.entries(board.signMap)) {
-    for (const [xStr, owner] of Object.entries(row)) {
-      const target = [Number(xStr), Number(yStr)]
-      const [x, y] = target
-      // if (owner === 0) continue
-      const ownedNeighbors = board.getNeighbors(target)
-        .map(v => board.get(v))
-        .filter(o => o !== 0)
-      const hasPos = ownedNeighbors.includes(1)
-      const hasNeg = ownedNeighbors.includes(-1)
-      const hasBoth = hasPos && hasNeg
-      const hasNeither = !hasPos && !hasNeg
-      const value = hasBoth ? 0
-        : hasNeither ? undefined
-        : hasPos ? 1
-        : -1
-      libertyBoard[y][x] = value
-    }
-  }
+  const libertyBoard = Array(board.height).fill().map(() => Array(board.width).fill(0))
+  visitBoard(board, (vertex, piece) => {
+    const [x, y] = vertex
+    const ownedNeighbors = board.getNeighbors(vertex)
+      .map(v => board.get(v))
+      .filter(o => o !== 0)
+    const hasPos = ownedNeighbors.includes(1)
+    const hasNeg = ownedNeighbors.includes(-1)
+    const hasBoth = hasPos && hasNeg
+    const hasNeither = !hasPos && !hasNeg
+    const value = hasBoth ? 0
+      : hasNeither ? undefined
+      : hasPos ? 1
+      : -1
+    libertyBoard[y][x] = value
+  })
   return libertyBoard
 }
 
+function visitBoard (board, visitorFn) {
+  for (const [yStr, row] of Object.entries(board.signMap)) {
+    for (const [xStr, owner] of Object.entries(row)) {
+      const vertex = [Number(xStr), Number(yStr)]
+      visitorFn(vertex, board.get(vertex))
+    }
+  }
+}
+
+function getEmptyTiles (board) {
+  const emptyTiles = []
+  visitBoard(board, (vertex, piece) => {
+    if (piece === 0) emptyTiles.push(vertex)
+  })
+  return emptyTiles
+}
+
+function getEmptyChains (board) {
+  const emptyChains = []
+  for (const vertex of getEmptyTiles(board)) {
+    // have we already captured this group?
+    if (emptyChains.some(chain => hasVertex(chain, vertex))) continue
+    const chain = board.getChain(vertex)
+    emptyChains.push(chain)
+  }
+  return emptyChains
+}
+
+function hasVertex (chain, vertex) {
+  return chain.some(w => vertexEquals(w, vertex))
+}
+
+function getChainNeighbors (board, chain) {
+  const neighbors = []
+  for (const vertex of chain) {
+    for (const neighbor of board.getNeighbors(vertex)) {
+      if (hasVertex(chain, neighbor)) continue
+      if (hasVertex(neighbors, neighbor)) continue
+      neighbors.push(neighbor)
+    }
+  }
+  return neighbors
+}
+
+function createTerritoryBoard (board) {
+  const territoryBoard = Array(board.height).fill().map(() => Array(board.width).fill(0))
+  const emptyChains = getEmptyChains(board)
+  for (const chain of emptyChains) {
+    const neighbors = getChainNeighbors(board, chain)
+    const neighborTypes = new Set(neighbors.map(v => board.get(v)))
+    // if more than one kind of territory, its not a neighbor
+    if (neighborTypes.size !== 1) continue
+    chain.forEach(([x,y]) => {
+      const [owner] = neighborTypes
+      territoryBoard[y][x] = owner
+    })
+  }
+  return territoryBoard
+}
+
+function getNeighborValues (board, vertex) {
+  return board.getNeighbors(vertex).map(v => board.get(v))
+}
+
+function getFriendlyNeighborCount (board, vertex) {
+  const owner = board.get(vertex)
+  const friendlyNeighbors = getNeighborValues(board, vertex).filter(o => o === owner)
+  return friendlyNeighbors.length
+}
 
 function boardToGameState (board) {
   const gameState = createGameState()
-  const libertyBoard = buildLibertyBoard(board)
-  for (const [y,row] of Object.entries(board.signMap)) {
-    for (const [x,stoneValue] of Object.entries(row)) {
-      let modelType, color
-      if (stoneValue === 0) {
-        const libertyValue = libertyBoard[y][x]
-        // no liberty
-        if (libertyValue === undefined) continue
-        // shared liberty
-        if (libertyValue === 0) continue
-        modelType = 'knight'
-        color = libertyValue === -1 ? 'black' : 'white'
-      } else {
-        modelType = 'castle'
-        color = stoneValue === -1 ? 'black' : 'white'
-      }
-      const id = `${modelType}-${color}-${x}-${y}`
-      gameState[`${modelType}-${color}`][id] = { x, y }
+  const libertyBoard = createLibertyBoard(board)
+  visitBoard(board, (vertex, stoneValue) => {
+    let modelType, color
+    const [x,y] = vertex
+    if (stoneValue === 0) {
+      const libertyValue = libertyBoard[y][x]
+      // no liberty
+      if (libertyValue === undefined) return
+      // shared liberty
+      if (libertyValue === 0) return
+      modelType = 'knight'
+      color = libertyValue === -1 ? 'black' : 'white'
+    } else {
+      const strength = getFriendlyNeighborCount(board, vertex)
+      modelType = strength > 0 ? 'castle' : 'tent'
+      color = stoneValue === -1 ? 'black' : 'white'
     }
-  }
+    const id = `${modelType}-${color}-${x}-${y}`
+    gameState[`${modelType}-${color}`][id] = { x, y }
+  })
+
   return gameState
 }
 
@@ -172,6 +240,7 @@ async function loadAllAssets () {
   const redColor = { r: 210/255, g: 70/255, b: 30/255 }
   const blueColor = { r: 80/255, g: 133/255, b: 188/255 }
   await Promise.all([
+    loadAsset('tent-white', 'models/nature/Models/OBJ format/tent_detailedOpen').promise,
     loadAsset('castle-black', 'models/tower-defense/Models/OBJ format/towerSquare_sampleA').promise,
     loadAsset('knight-black', 'models/castle/Models/knightBlue').promise,
     loadAsset('knight-white', 'models/castle/Models/knightRed').promise,
@@ -181,28 +250,35 @@ async function loadAllAssets () {
     loadAsset('plant-lily-large', 'models/nature/Models/OBJ format/lily_large').promise,
   ])
   // tweak
+  models['tent-white'].object.scale.multiplyScalar(10)
   models['ground-grass'].object.scale.multiplyScalar(10)
   models['plant-bush-small'].object.scale.multiplyScalar(10)
   models['plant-lily-large'].object.scale.multiplyScalar(10)
   models['cliff-top-rock'].object.scale.multiplyScalar(10)
   models['knight-white'].object.rotation.y = 1/4 * fullTurn
   models['knight-black'].object.rotation.y = 3/8 * fullTurn
-  // modify the asset to have 2 color versions
   models['castle-black'].object.scale.multiplyScalar(10)
+  // modify the asset to have 2 color versions
+  models['tent-black'] = { ...models['tent-white'], object: models['tent-white'].object.clone() }
+  cloneTextures(models['tent-black'].object)
+  models['tent-black'].object.children[0].material[0].color = blueColor
   models['castle-white'] = { ...models['castle-black'], object: models['castle-black'].object.clone() }
   // deep clone all materials
-  models['castle-white'].object.traverse((node) => {
-    if (node.isMesh) {
-      if (Array.isArray(node.material)) {
-        node.material = node.material.map(mat => mat.clone())
-      } else {
-        node.material = node.material.clone();
-      }
-    }
-  });
+  cloneTextures(models['castle-white'].object)
   // change primary colors
   models["castle-black"].object.children[0].material[1].color = blueColor
   models["castle-white"].object.children[0].material[1].color = redColor
+}
+
+function cloneTextures (object) {
+  object.traverse((node) => {
+    if (!node.isMesh) return
+    if (Array.isArray(node.material)) {
+      node.material = node.material.map(mat => mat.clone())
+    } else {
+      node.material = node.material.clone();
+    }
+  });
 }
 
 function drawGround (board) {
